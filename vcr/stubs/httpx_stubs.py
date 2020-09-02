@@ -1,6 +1,7 @@
 import functools
 import logging
 from unittest.mock import patch, MagicMock
+from urllib.parse import urljoin
 
 import httpx
 from vcr.request import Request as VcrRequest
@@ -104,9 +105,11 @@ def _play_responses(cassette, request, vcr_request, client, kwargs):
     response = _from_serialized_response(request, vcr_response)
 
     while allow_redirects and 300 <= response.status_code <= 399:
-        next_url = response.headers.get("location")
-        if not next_url:
+        location = response.headers.get("location")
+        if not location:
             break
+
+        next_url = urljoin(str(response.url), location)
 
         # Even though 302 shouldn't change request's method, browsers like Chromium
         # change method to GET for compatibility
